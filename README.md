@@ -183,7 +183,7 @@ graph TD
     Admin --> A1[Verifikasi Dokter]
     Admin --> A2[Audit & Monitoring]
     
-    subgraph "Fitur Terenkripsi (Opsional/Eksklusif)"
+    subgraph "Fitur Terenkripsi"
     P1 -.-> Lab[Lab Stenografi]
     D1 -.-> Lab
     Admin --> Lab
