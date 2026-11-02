@@ -8,4 +8,4 @@ scikit-image>=0.22
 opencv-python-headless>=5.0.0.93
 pandas>=2.0
 python-dotenv>=1.0
-qrcode>=7.4
+qrcode>=8.2
