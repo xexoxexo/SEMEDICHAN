@@ -15,7 +15,7 @@ Rekam Medis Elektronik (RME) enterprise-grade dengan enkripsi kriptografi kuantu
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start 
 
 ### Prerequisites
 - Python 3.11+
