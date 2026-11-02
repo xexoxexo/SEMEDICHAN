@@ -1,6 +1,6 @@
 # SeMediChain - Rekam Medis Elektronik Web3
 
-![Logo Produksi](views/logopredd.png)
+![Logo Produksi](views/logoprod.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
