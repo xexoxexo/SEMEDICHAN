@@ -1,10 +1,52 @@
-.env
+# .gitignore untuk SeMediChain
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.spec.bak
+
+# Virtual Environment
+venv/
 .env.example
 .env.production.example
-data/
-venv/
+.env
 .venv/
-__pycache__/
-*.pyc
+env/
+ENV/
+
+# Data & Secrets (JANGAN COMMIT!)
+data/*.db
+data/.master_key
+data/*.log
+data/mail_outbox.log
+
+# IDE & Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker (local development)
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# Test cache
 .pytest_cache/
-.streamlit/secrets.toml
+
+# Temporary files
+tmp/
+*.tmp
+*.temp

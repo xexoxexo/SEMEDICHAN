@@ -74,9 +74,9 @@ def test_rate_limiter_window():
     key = f"uji:{time.time()}"
     assert [db.rate_limited(key, 3, 60) for _ in range(5)] == [False, False, False, True, True]
     key2 = f"uji2:{time.time()}"
-    assert db.rate_limited(key2, 1, 0.01) is False
-    time.sleep(0.05)
-    assert db.rate_limited(key2, 1, 0.01) is False                      # jendela baru
+    assert db.rate_limited(key2, 1, 1) is False
+    time.sleep(1.05)
+    assert db.rate_limited(key2, 1, 1) is False                         # jendela baru
 
 
 def test_password_policy_extras():
@@ -91,11 +91,17 @@ def test_smtp_backend_sends_with_tls(monkeypatch):
     calls = []
 
     class FakeSMTP:
-        def __init__(self, host, port, timeout=0): calls.append(("connect", host, port))
+        def __init__(self, host, port, _timeout=0):
+            del _timeout
+            calls.append(("connect", host, port))
         def __enter__(self): return self
-        def __exit__(self, *a): return False
+        def __exit__(self, *_args):
+            del _args
+            return False
         def starttls(self, context=None): calls.append(("starttls", context is not None))
-        def login(self, u, p): calls.append(("login", u))
+        def login(self, u, _p):
+            del _p
+            calls.append(("login", u))
         def send_message(self, msg): calls.append(("send", msg["To"], msg["Subject"]))
 
     monkeypatch.setattr(config, "MAIL_BACKEND", "smtp")
@@ -106,7 +112,9 @@ def test_smtp_backend_sends_with_tls(monkeypatch):
     assert ("starttls", True) in calls and ("login", "noreply@example.com") in calls and ("send", "pasien@gmail.com", "Kode") in calls
 
     class Boom(FakeSMTP):
-        def send_message(self, msg): raise OSError("jaringan putus")
+        def send_message(self, msg):
+            del msg
+            raise OSError("jaringan putus")
     monkeypatch.setattr("smtplib.SMTP", Boom)
     with pytest.raises(mailer.MailError):
         mailer.send_mail("pasien@gmail.com", "Kode", "123456")
@@ -146,7 +154,9 @@ def _login(at, email, password=PW):
 
 
 def _last_code():
-    return re.search(r"\b(\d{6})\b", mailer.DEV_OUTBOX[-1]["body"]).group(1)
+    match = re.search(r"\b(\d{6})\b", mailer.DEV_OUTBOX[-1]["body"])
+    assert match is not None
+    return match.group(1)
 
 
 def test_email_verification_required(monkeypatch):
@@ -245,7 +255,7 @@ def test_session_idle_and_absolute_timeouts():
     assert any("batas waktu maksimum" in w.value for w in at.warning)
 
 
-def test_security_page_enroll_change_password_and_cannot_disable_required(monkeypatch):
+def test_security_page_enroll_change_password_and_cannot_disable_required():
     at = _ok(AppTest.from_file(APP, default_timeout=120).run())
     _signup(at, "Pasien Keamanan", "pasien.keamanan@gmail.com")
     at.sidebar.radio[0].set_value("Keamanan akun")

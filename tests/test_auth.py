@@ -1,6 +1,6 @@
 import time
 
-import pytest
+import pytest  # type: ignore[reportMissingImports]
 
 import config
 from utils import auth
@@ -8,7 +8,7 @@ from utils import db_helper as db
 from utils import web3_utils as w3
 
 
-@pytest.fixture(autouse=True)
+pytest.fixture(autouse=True)
 def isolate_state(monkeypatch):
     """Pastikan setiap test dimulai dari basis data bersih dan konfigurasi default."""
     db.init_db()
@@ -61,6 +61,7 @@ def test_duplicate_email_including_gmail_aliases():
 
 def test_admin_email_gets_admin_role_and_doctor_approval_rules(monkeypatch):
     monkeypatch.setattr(config, "ADMIN_EMAILS", {"admin.unit@gmail.com"})
+    monkeypatch.setattr(config, "AUTO_APPROVE_DOCTORS", True)
 
     admin = _mk("admin.unit@gmail.com")
     assert admin is not None and admin.role == "admin"

@@ -62,7 +62,6 @@ def _header(at):
 
 def _fresh():
     app_test = AppTest.from_file(APP, default_timeout=30)
-    app_test.script_path = APP
     return _ok(app_test.run())
 
 
@@ -253,4 +252,5 @@ def test_registration_requires_and_records_privacy_consent():
     at.checkbox(key="reg_consent").check()
     _click(at, "Daftar")
     acct = db.get_account_by_email("pasien.persetujuan@gmail.com")
+    assert acct is not None
     assert acct.consent_version == config.PRIVACY_VERSION and acct.consent_at is not None

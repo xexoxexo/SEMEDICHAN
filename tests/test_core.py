@@ -131,7 +131,7 @@ def test_challenge_login_ok_and_replay_rejected():
 
 
 def test_challenge_rejects_tampered_message_and_wrong_address():
-    ch, address, message, sig = _signed_challenge("satu-klik-2")
+    ch, address, message, _ = _signed_challenge("satu-klik-2")
     assert db.consume_challenge(address, ch["nonce"], message.replace("Nonce:", "Nonce: ")) is False
     assert db.consume_challenge(ADDR_X, ch["nonce"], message) is False  # alamat lain -> pesan rekonstruksi beda
     assert db.consume_challenge(address, "nonce-palsu", message) is False

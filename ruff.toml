@@ -1,0 +1,17 @@
+# Ruff Configuration untuk SeMediChain
+# https://docs.astral.sh/ruff/
+
+target-version = "py311"
+line-length = 120
+select = ["E", "W", "F", "B", "C4", "ICN", "PIE", "PL", "PT", "SIM", "UP", "YTT"]
+ignore = [
+    # Allow print statements (useful for CLI tools)
+    "T201",
+]
+
+[per-file-ignores]
+# Ignore unused imports in __init__.py
+"__init__.py" = ["F401"]
+
+# Ignore complexity in tests
+"tests/*" = ["PLR", "C901"]

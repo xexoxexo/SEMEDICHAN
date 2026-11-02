@@ -44,10 +44,10 @@ def cmd_check_config(args) -> int:
     if not problems:
         try:
             db.init_db()
-            _out("✅ Konfigurasi lolos. Master key cocok dengan data.")
+            _out("[OK] Konfigurasi lolos. Master key cocok dengan data.")
             return 0
         except RuntimeError as e:
-            _out(f"❌ Master key mismatch: {e}")
+            _out(f"[ERROR] Master key mismatch: {e}")
             _out("\nSolusi:")
             _out("  1. Jalankan: python -m tools.manage diagnose-key")
             _out("  2. Atau reset DB: rm data/stegomed.db data/.master_key")

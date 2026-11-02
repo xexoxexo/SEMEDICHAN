@@ -66,7 +66,6 @@ def _build_export(user, account, passphrases: dict[str, str]) -> tuple[bytes, li
                 continue
             z.writestr(f"rekam/{tag}.json", json.dumps(rec, ensure_ascii=False, indent=2))
             z.writestr(f"fhir/{tag}_fhir.json", json.dumps(fhir.record_to_bundle(rec, r.id), ensure_ascii=False, indent=2))
-            z.writestr(f"fhir/{tag}_fhir.json", json.dumps(fhir.record_to_bundle(rec, r.id), ensure_ascii=False, indent=2))
             
             # Ekspor PHI terpisah jika ada
             if rec.get("_phi"):

@@ -2,7 +2,7 @@
 import io
 import json
 import tarfile
-from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -32,6 +32,7 @@ def isolated(tmp_path, monkeypatch):
 
 def _populate():
     patient, doctor = _person("pasien-ops", "patient"), _person("dokter-ops", "doctor")
+    patient = cast(Any, patient)
     rec, _ = _make_record(patient, doctor, "rahasia-ops")
     acct = db.get_account_by_wallet(patient.address)
     if acct is None:
@@ -42,9 +43,11 @@ def _populate():
 
 
 # ------------------------------------------------------------------ admin CLI
-def test_cli_admin_mfa_unlock(isolated, capsys):
+@pytest.mark.usefixtures("isolated")
+def test_cli_admin_mfa_unlock():
     assert manage.main(["create-admin", "--email", "cli.admin@gmail.com", "--name", "Admin CLI", "--password", PW]) == 0
     acct = db.get_account_by_email("cli.admin@gmail.com")
+    assert acct is not None
     assert acct.role == "admin" and acct.is_approved and acct.email_verified
     assert manage.main(["create-admin", "--email", "cli.admin@gmail.com", "--name", "X", "--password", PW]) == 1   # duplikat
     assert manage.main(["create-admin", "--email", "lemah@gmail.com", "--name", "X", "--password", "password123"]) == 1
@@ -59,7 +62,8 @@ def test_cli_admin_mfa_unlock(isolated, capsys):
     assert {"admin_dibuat_cli", "mfa_direset_cli", "akun_dibuka_cli"} <= set(actions)
 
 
-def test_cli_check_config_and_audit_checkpoint(isolated, tmp_path, capsys):
+@pytest.mark.usefixtures("isolated")
+def test_cli_check_config_and_audit_checkpoint(tmp_path):
     assert manage.main(["check-config"]) == 0
     db.log_event("0x" + "a" * 40, "uji_cli")
     cp = tmp_path / "cp.json"
@@ -74,8 +78,9 @@ def test_cli_check_config_and_audit_checkpoint(isolated, tmp_path, capsys):
 
 
 # ------------------------------------------------------------------ backup & restore (skenario bencana)
-def test_backup_verify_tamper_and_disaster_restore(isolated, tmp_path):
-    patient, doctor, rec, acct, secret, codes = _populate()
+@pytest.mark.usefixtures("isolated")
+def test_backup_verify_tamper_and_disaster_restore(tmp_path):
+    patient, _, rec, _, _, _ = _populate()
     backup = tmp_path / "out" / "cadangan.tar.gz"
     assert manage.main(["backup", "--out", str(backup)]) == 0
     assert manage.main(["verify-backup", "--file", str(backup)]) == 0
@@ -84,7 +89,9 @@ def test_backup_verify_tamper_and_disaster_restore(isolated, tmp_path):
     tampered = tmp_path / "rusak.tar.gz"
     with tarfile.open(backup) as src, tarfile.open(tampered, "w:gz") as dst:
         for m in src.getmembers():
-            blob = src.extractfile(m).read()
+            extracted = src.extractfile(m)
+            assert extracted is not None
+            blob = extracted.read()
             if m.name.startswith("stego/"):
                 blob = blob[:-1] + bytes([blob[-1] ^ 1])
             info = tarfile.TarInfo(m.name)
@@ -95,7 +102,9 @@ def test_backup_verify_tamper_and_disaster_restore(isolated, tmp_path):
     forged = tmp_path / "palsu.tar.gz"
     with tarfile.open(backup) as src, tarfile.open(forged, "w:gz") as dst:
         for m in src.getmembers():
-            blob = src.extractfile(m).read()
+            extracted = src.extractfile(m)
+            assert extracted is not None
+            blob = extracted.read()
             if m.name == "manifest.json":
                 blob = blob.replace(b'"versi": 1', b'"versi": 2')
             info = tarfile.TarInfo(m.name)
@@ -116,38 +125,50 @@ def test_backup_verify_tamper_and_disaster_restore(isolated, tmp_path):
     db.get_engine.cache_clear()
     db.init_db()
     restored = db.get_record(rec.id)
+    assert restored is not None
     assert restored.title == "Uji" and rs.open_record(restored, patient, "rahasia-ops")["diagnosis"] == "Bronkitis"
-    assert db.get_account_by_email("pasien-ops.berbagi@gmail.com").mfa_enabled
+    restored_account = db.get_account_by_email("pasien-ops.berbagi@gmail.com")
+    assert restored_account is not None and restored_account.mfa_enabled
     assert db.verify_audit_chain()[0]
 
 
 # ------------------------------------------------------------------ rotasi master key
-def test_rotate_master_key_end_to_end(isolated, monkeypatch):
-    patient, doctor, rec, acct, secret, codes = _populate()
+@pytest.mark.usefixtures("isolated")
+def test_rotate_master_key_end_to_end(monkeypatch):
+    patient, _, rec, acct, secret, codes = _populate()
     from models import SystemMeta
     from utils import fieldcrypt
 
     monkeypatch.setenv("MEDICRYPT_MASTER_KEY_OLD", "kunci-A-0123456789-0123456789-abcdefgh")
     monkeypatch.setenv("MEDICRYPT_MASTER_KEY", "kunci-B-9876543210-9876543210-hgfedcba")
     # selama transisi (cincin kunci) semuanya tetap terbaca tanpa rotasi
-    assert db.get_account_by_email("pasien-ops.berbagi@gmail.com").full_name == "Pasien-Ops"
+    transition_account = db.get_account_by_email("pasien-ops.berbagi@gmail.com")
+    assert transition_account is not None and transition_account.full_name == "Pasien-Ops"
     assert rs.open_record(db.get_record(rec.id), patient, "rahasia-ops")["diagnosis"] == "Bronkitis"
     db.check_master_key()                                                        # kunci lama di cincin: boleh start
 
     assert manage.main(["rotate-master", "--dry-run"]) == 0
     with db.session_scope() as s:
-        assert s.get(SystemMeta, "master_fingerprint").value == fieldcrypt.fingerprint(config.master_keys()[1])   # belum berubah
+        meta = s.get(SystemMeta, "master_fingerprint")
+        assert meta is not None
+        assert meta.value == fieldcrypt.fingerprint(config.master_keys()[1])   # belum berubah
     assert manage.main(["rotate-master"]) == 0
     with db.session_scope() as s:
-        assert s.get(SystemMeta, "master_fingerprint").value == fieldcrypt.fingerprint(config.master_key())
+        meta = s.get(SystemMeta, "master_fingerprint")
+        assert meta is not None
+        assert meta.value == fieldcrypt.fingerprint(config.master_key())
 
     # kunci lama dibuang: semua tetap berfungsi
     monkeypatch.delenv("MEDICRYPT_MASTER_KEY_OLD")
     db.check_master_key()
     again = db.get_account_by_email("PASIEN-OPS.berbagi+x@gmail.com")
     assert again is not None and again.totp_secret == secret                     # blind index + kolom terenkripsi dirotasi
-    assert db.get_record(rec.id).cover_name == "c.png" and db.get_user(patient.address).name == "Pasien-Ops"
+    rotated_record = db.get_record(rec.id)
+    rotated_user = db.get_user(patient.address)
+    assert rotated_record is not None and rotated_user is not None
+    assert rotated_record.cover_name == "c.png" and rotated_user.name == "Pasien-Ops"
     fresh = db.get_user(patient.address)
+    assert fresh is not None
     patient.enc_priv = fresh.enc_priv                                            # kunci privat sudah dibungkus ulang
     assert rs.open_record(db.get_record(rec.id), patient, "rahasia-ops")["diagnosis"] == "Bronkitis"
     assert db.use_recovery_code(acct.id, codes[0]) is True                       # kode pemulihan tetap berlaku
@@ -159,5 +180,6 @@ def test_rotate_master_key_end_to_end(isolated, monkeypatch):
         db.check_master_key()
 
 
-def test_rotate_requires_old_key(isolated):
+@pytest.mark.usefixtures("isolated")
+def test_rotate_requires_old_key():
     assert manage.main(["rotate-master"]) == 1

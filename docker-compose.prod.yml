@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: semedichain:latest
+    container_name: semedi_production_app
+    restart: always
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://semedi_user:semedi_password@postgres_db:5432/semedi_db
+      - ALLOW_SQLITE_IN_PRODUCTION=0
+    ports:
+      - "80:8501"
+    volumes:
+      - stego_data:/app/data
+    depends_on:
+      - postgres_db
+    networks:
+      - semedi_net
+
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: semedi_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=semedi_db
+      - POSTGRES_USER=semedi_user
+      - POSTGRES_PASSWORD=semedi_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - semedi_net
+
+volumes:
+  pgdata:
+  stego_data:
+
+networks:
+  semedi_net:
+    driver: bridge

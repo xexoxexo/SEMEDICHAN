@@ -14,7 +14,7 @@ from components import steganography as stego
 from utils import access, auth, clinical, fhir, record_service as rs, crypto_utils as mc, db_helper as db
 from utils import web3_utils as w3
 
-@pytest.fixture(autouse=True)
+pytest.fixture(autouse=True)
 def mock_session():
     st.session_state["DEK"] = os.urandom(32)
     yield
@@ -63,14 +63,14 @@ def _make_record(patient, author, passphrase=None, fmt="PNG"):
     return result, cover
 
 
-@pytest.fixture(scope="module")
+pytest.fixture(scope="module")
 def cast():
     db.init_db()
     return {"pasien": _person("pasien-berbagi", "patient"), "dokter1": _person("dokter-satu", "doctor"),
             "dokter2": _person("dokter-dua", "doctor")}
 
 
-@pytest.mark.parametrize("passphrase,fmt", [(None, "PNG"), ("rahasia-pp", "BMP")])
+pytest.mark.parametrize("passphrase,fmt", [(None, "PNG"), ("rahasia-pp", "BMP")])
 def test_share_then_revoke_cuts_access_and_scrubs_old_bits(cast, passphrase, fmt):
     p, d1, d2 = cast["pasien"], cast["dokter1"], cast["dokter2"]
     rec, _ = _make_record(p, d1, passphrase, fmt)

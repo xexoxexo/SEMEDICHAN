@@ -4,6 +4,7 @@ import json
 import logging
 import zipfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import text
@@ -11,9 +12,8 @@ from streamlit.testing.v1 import AppTest
 
 import config
 from models import AuditLog
-from utils import auth, fhir
+from utils import auth
 from utils import db_helper as db
-from utils import record_service as rs
 from utils import web3_utils as w3
 from views import patient_rights
 
@@ -46,7 +46,6 @@ def test_checkpoint_detects_truncation_rewrite_and_forgery():
 
     # pengelola DB memangkas entri terakhir lalu menyambung ulang rantai: dicek lewat checkpoint
     with db.session_scope() as s:
-        last = s.query(AuditLog).order_by(AuditLog.id.desc()).first()
         keep_id = cp["head_id"]
         s.query(AuditLog).filter(AuditLog.id >= keep_id).delete()                  # hapus kepala checkpoint dan setelahnya
     ok, msg = db.verify_checkpoint(cp)
@@ -61,13 +60,16 @@ def test_checkpoint_detects_rewritten_history():
     cp = db.audit_checkpoint()
     with db.session_scope() as s:
         row = s.get(AuditLog, cp["head_id"])
+        assert row is not None
         original, row.detail = row.detail, "diubah diam-diam"
     try:
         ok, msg = db.verify_checkpoint(cp)
         assert ok is False and ("rusak" in msg or "berbeda" in msg)
     finally:                                                                       # jangan merusak database bersama untuk tes lain
         with db.session_scope() as s:
-            s.get(AuditLog, cp["head_id"]).detail = original
+            row = s.get(AuditLog, cp["head_id"])
+            assert row is not None
+            row.detail = original
     assert db.verify_audit_chain()[0] is True
 
 
@@ -81,7 +83,9 @@ def _patient_with_record():
     db.link_wallet(pa.id, pa_addr)
     db.link_wallet(da.id, da_addr)
     pu, du = db.get_user(pa_addr), db.get_user(da_addr)
-    make = lambda u: type("P", (), dict(address=u.address, enc_pub=u.enc_pub, enc_priv=u.enc_priv, role=u.role, wallet_linked=True, name=u.name))()  # noqa: E731
+    def make(u: Any) -> Any:
+        return type("P", (), dict(address=u.address, enc_pub=u.enc_pub, enc_priv=u.enc_priv, role=u.role, wallet_linked=True, name=u.name))()
+
     patient, doctor = make(pu), make(du)
     recs = []
     for i, pp in enumerate([None, "rahasia-ekspor"]):
@@ -105,8 +109,8 @@ def _patient_with_record():
 
 
 def test_patient_access_history_shows_actions_on_own_records_only():
-    pa, patient, doctor, recs = _patient_with_record()
-    _, other, other_doc, other_recs = _patient_with_record()
+    _, patient, doctor, recs = _patient_with_record()
+    _, _, other_doc, other_recs = _patient_with_record()
     db.log_event(doctor.address, "dekripsi", recs[0])
     db.log_event(other_doc.address, "dekripsi", other_recs[0])                       # rekam pasien lain
     logs = db.list_logs_for_patient(patient.address, recs)
@@ -116,7 +120,7 @@ def test_patient_access_history_shows_actions_on_own_records_only():
 
 
 def test_export_contains_decrypted_fhir_and_skips_protected_without_passphrase():
-    pa, patient, doctor, recs = _patient_with_record()
+    pa, patient, _doctor, recs = _patient_with_record()
     account = db.get_account(pa.id)
     data, skipped = patient_rights._build_export(patient, account, {})
     z = zipfile.ZipFile(io.BytesIO(data))
@@ -141,6 +145,7 @@ def test_subject_request_lifecycle():
     assert req.status == "baru" and db.list_subject_requests(account_id=pa.id)[0].detail == "Tanggal lahir saya salah."
     with db.get_engine().connect() as c:
         raw = c.execute(text("SELECT detail FROM subject_requests WHERE id=:i"), {"i": req.id}).scalar()
+    assert raw is not None
     assert raw.startswith("enc1:") and "Tanggal" not in raw                         # rincian terenkripsi di database
     assert db.update_subject_request(req.id, "selesai", "Sudah diperbaiki.", "acct:1")
     got = db.list_subject_requests(status="selesai")
