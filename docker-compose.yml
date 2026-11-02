@@ -1,0 +1,54 @@
+# Tumpukan produksi: Caddy (HTTPS) -> aplikasi Streamlit -> PostgreSQL.
+# Pemakaian:  cp .env.production.example .env.production  (isi semua nilai), lalu
+#             docker compose --env-file .env.production up -d --build
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stegomed
+      POSTGRES_USER: stegomed
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stegomed -d stegomed"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql+psycopg2://stegomed:${POSTGRES_PASSWORD}@db:5432/stegomed
+      TRUST_PROXY_HEADERS: "1"
+    volumes:
+      - stegodata:/data
+    expose:
+      - "8501"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?isi APP_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  stegodata:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { --fg: #1f2933; --primary: #0b6e6e; --bg: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: "Source Sans Pro", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 15px; }
+  .box { border: 1px solid rgba(128,128,128,.4); border-radius: 8px; padding: 14px 16px; }
+  button { background: var(--primary); color: #fff; border: 0; border-radius: 6px; padding: 10px 18px;
+    font: inherit; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: progress; }
+  button:focus-visible { outline: 3px solid rgba(11,110,110,.45); outline-offset: 2px; }
+  .muted { opacity: .75; font-size: 13px; margin-top: 8px; }
+  .err { color: #c62828; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="box" id="root"></div>
+<script>
+(function () {
+  var TOKEN = "{{ADDRESS}}";
+  var args = { template: null, nonce: null, expires_ts: 0 };
+  var state = { busy: false, status: "", error: null };
+  var root = document.getElementById("root");
+
+  function post(type, data) {
+    window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, data || {}), "*");
+  }
+  function setValue(v) { post("streamlit:setComponentValue", { value: v, dataType: "json" }); }
+  function resize() { post("streamlit:setFrameHeight", { height: document.documentElement.scrollHeight + 2 }); }
+
+  // ---------------------------------------------------------------- keccak-256 (untuk checksum EIP-55)
+  var RC = [
+    0x0000000000000001n, 0x0000000000008082n, 0x800000000000808an, 0x8000000080008000n,
+    0x000000000000808bn, 0x0000000080000001n, 0x8000000080008081n, 0x8000000000008009n,
+    0x000000000000008an, 0x0000000000000088n, 0x0000000080008009n, 0x000000008000000an,
+    0x000000008000808bn, 0x800000000000008bn, 0x8000000000008089n, 0x8000000000008003n,
+    0x8000000000008002n, 0x8000000000000080n, 0x000000000000800an, 0x800000008000000an,
+    0x8000000080008081n, 0x8000000000008080n, 0x0000000080000001n, 0x8000000080008008n];
+  var ROT = [0, 1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14];
+  var M64 = (1n << 64n) - 1n;
+  function rotl(v, n) { return n === 0 ? v : ((v << BigInt(n)) | (v >> BigInt(64 - n))) & M64; }
+
+  function keccakF(s) {
+    for (var round = 0; round < 24; round++) {
+      var C = [], D = [], B = [], x, y;
+      for (x = 0; x < 5; x++) C[x] = s[x] ^ s[x + 5] ^ s[x + 10] ^ s[x + 15] ^ s[x + 20];
+      for (x = 0; x < 5; x++) D[x] = C[(x + 4) % 5] ^ rotl(C[(x + 1) % 5], 1);
+      for (x = 0; x < 25; x++) s[x] ^= D[x % 5];
+      for (x = 0; x < 5; x++) for (y = 0; y < 5; y++) B[y + 5 * ((2 * x + 3 * y) % 5)] = rotl(s[x + 5 * y], ROT[x + 5 * y]);
+      for (y = 0; y < 5; y++) for (x = 0; x < 5; x++)
+        s[x + 5 * y] = B[x + 5 * y] ^ ((~B[(x + 1) % 5 + 5 * y] & M64) & B[(x + 2) % 5 + 5 * y]);
+      s[0] ^= RC[round];
+    }
+  }
+
+  function keccak256(input) {
+    var rate = 136, s = [], i, b;
+    for (i = 0; i < 25; i++) s.push(0n);
+    var padLen = rate - (input.length % rate);
+    var data = new Uint8Array(input.length + padLen);
+    data.set(input);
+    data[input.length] ^= 0x01;          // padding Keccak asli (bukan SHA-3)
+    data[data.length - 1] ^= 0x80;
+    for (var off = 0; off < data.length; off += rate) {
+      for (i = 0; i < rate / 8; i++) {
+        var lane = 0n;
+        for (b = 7; b >= 0; b--) lane = (lane << 8n) | BigInt(data[off + i * 8 + b]);
+        s[i] ^= lane;
+      }
+      keccakF(s);
+    }
+    var out = new Uint8Array(32);
+    for (i = 0; i < 4; i++) { var v = s[i]; for (b = 0; b < 8; b++) { out[i * 8 + b] = Number(v & 0xffn); v >>= 8n; } }
+    return out;
+  }
+
+  function toChecksum(addr) {
+    var lower = addr.toLowerCase().replace(/^0x/, "");
+    var hash = Array.from(keccak256(new TextEncoder().encode(lower)))
+      .map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+    var out = "0x";
+    for (var i = 0; i < 40; i++) out += parseInt(hash[i], 16) >= 8 ? lower[i].toUpperCase() : lower[i];
+    return out;
+  }
+
+  // ---------------------------------------------------------------- provider
+  // Halaman utama (parent/top) didahulukan: MetaMask yang disuntikkan ke iframe sering tak tersambung ke ekstensi.
+  function candidates() {
+    var list = [];
+    function add(p) { if (p && typeof p.request === "function" && list.indexOf(p) === -1) list.push(p); }
+    function addFrom(win) {
+      try {
+        var eth = win && win.ethereum;
+        if (!eth) return;
+        if (Array.isArray(eth.providers)) eth.providers.filter(function (p) { return p && p.isMetaMask; }).forEach(add);
+        add(eth);
+      } catch (e) { /* lintas-origin: abaikan */ }
+    }
+    addFrom(window.parent);
+    try { if (window.top !== window.parent) addFrom(window.top); } catch (e) {}
+    addFrom(window);
+    return list;
+  }
+
+  function toHex(s) {
+    return "0x" + Array.from(new TextEncoder().encode(s)).map(function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
+  }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function describe(e) {
+    if (e && e.code === 4001) return "Permintaan ditolak di MetaMask. Klik tombol untuk mencoba lagi.";
+    if (e && e.code === -32002) return "Ada permintaan MetaMask yang masih tertunda. Buka ikon MetaMask lalu selesaikan.";
+    return ((e && e.message) || "Gagal tersambung ke MetaMask.") +
+      " Jika berulang, buka MetaMask dan pastikan tidak terkunci, atau pakai tab Dompet demo.";
+  }
+
+  function render() {
+    root.innerHTML = "";
+    var label = state.busy ? (state.status || "Memproses…") : "Masuk dengan MetaMask";
+    var b = el("button", "", label);
+    b.disabled = state.busy || !args.template;
+    b.addEventListener("click", login);
+    root.appendChild(b);
+    if (!args.template) root.appendChild(el("div", "muted", "Menyiapkan pesan masuk…"));
+    else if (!state.busy && !candidates().length) {
+      root.appendChild(el("div", "muted",
+        "MetaMask belum terdeteksi di browser ini. Pasang ekstensi MetaMask, muat ulang halaman, atau pakai tab Dompet demo."));
+    } else if (!state.busy) {
+      root.appendChild(el("div", "muted", "Satu klik: pilih akun lalu tanda tangani pesan. Gratis, tanpa transaksi."));
+    }
+    if (state.error) root.appendChild(el("div", "err", state.error));
+    resize();
+  }
+
+  // ---------------------------------------------------------------- satu klik: akun -> isi template -> tanda tangan
+  async function login() {
+    if (state.busy || !args.template) return;
+    var list = candidates();
+    if (!list.length) { state.error = "MetaMask tidak terdeteksi."; return render(); }
+    if (args.expires_ts && Date.now() / 1000 > args.expires_ts - 3) {
+      state.error = "Pesan kedaluwarsa, memperbarui…";
+      render();
+      return setValue({ stage: "expired" });
+    }
+    state.busy = true; state.error = null; state.status = "Menghubungkan ke MetaMask…"; render();
+    var lastErr = null;
+    for (var i = 0; i < list.length; i++) {
+      var provider = list[i];
+      try {
+        var accounts = await provider.request({ method: "eth_accounts" });      // tanpa popup bila sudah diizinkan
+        if (!accounts || !accounts.length) {
+          state.status = "Setujui koneksi di MetaMask…"; render();
+          accounts = await provider.request({ method: "eth_requestAccounts" });
+        }
+        if (!accounts || !accounts.length) continue;
+        var address = accounts[0];
+        var message = args.template.split(TOKEN).join(toChecksum(address));
+        state.status = "Tanda tangani pesan di MetaMask…"; render();
+        var signature = await provider.request({ method: "personal_sign", params: [toHex(message), address] });
+        state.status = "Memverifikasi…"; render();
+        setValue({ stage: "signed", address: address, nonce: args.nonce, message: message, signature: signature });
+        return;                                   // tetap "sibuk": server akan memverifikasi lalu me-render ulang
+      } catch (e) {
+        lastErr = e;
+        if (e && (e.code === 4001 || e.code === -32002)) break;                  // keputusan pengguna / permintaan tertunda
+      }
+    }
+    state.busy = false; state.error = describe(lastErr); render();
+  }
+
+  window.addEventListener("message", function (event) {
+    var data = event.data || {};
+    if (data.type !== "streamlit:render") return;
+    var theme = data.theme || {};
+    if (theme.textColor) document.documentElement.style.setProperty("--fg", theme.textColor);
+    if (theme.primaryColor) document.documentElement.style.setProperty("--primary", theme.primaryColor);
+    var a = data.args || {};
+    args = { template: a.template || null, nonce: a.nonce || null, expires_ts: a.expires_ts || 0 };
+    render();
+  });
+
+  post("streamlit:componentReady", { apiVersion: 1 });
+  render();
+})();
+</script>
+</body>
+</html>

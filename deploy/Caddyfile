@@ -1,0 +1,13 @@
+# Reverse proxy HTTPS (sertifikat Let's Encrypt otomatis). Caddy mengatur websocket dan X-Forwarded-For.
+{$APP_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+	reverse_proxy app:8501
+}
