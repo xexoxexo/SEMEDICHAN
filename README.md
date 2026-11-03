@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/Tests-80%25-green.svg)](https://github.com/anomalyco/opencode)
+[![Tests](https://img.shields.io/badge/Tests-78%25-green.svg)](https://github.com/anomalyco/opencode)
 [![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](https://github.com/anomalyco/opencode)
 
 </div>
