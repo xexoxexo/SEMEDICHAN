@@ -7,7 +7,7 @@ import pytest
 import unittest.mock as mock
 
 # Isolasi data uji
-test_dir = tempfile.mkdtemp(prefix="stegomed_test_")
+test_dir = tempfile.mkdtemp(prefix="SeMediChain_test_")
 os.environ["DATA_DIR"] = test_dir
 os.environ["DATABASE_URL"] = f"sqlite:///{(Path(test_dir) / 'test.db').as_posix()}"
 os.environ["APP_ENV"] = "testing"

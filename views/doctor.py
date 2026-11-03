@@ -227,7 +227,7 @@ def _process(user, patient, body: dict, cover_file, passphrase, out_fmt: str) ->
         
         # Payload utama (RME standard)
         record = {
-            "schema": "StegoMed-RME/2", **body,
+            "schema": "SeMediChain", **body,
             "patient": {"name": patient.name, "address": patient.address},
             "doctor": {"name": user.name, "address": user.address, "str": user.license_no},
             "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

@@ -8,7 +8,7 @@ from email.message import EmailMessage
 
 import config
 
-log = logging.getLogger("stegomed.mail")
+log = logging.getLogger("SeMediChain")
 DEV_OUTBOX: list[dict] = []   # hanya terisi pada backend console
 
 

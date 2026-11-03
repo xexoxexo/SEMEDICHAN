@@ -1,4 +1,4 @@
-"""Alat operasional StegoMed-Web3.
+"""Alat operasional SeMediChain.
 
 Pemakaian:  python -m tools.manage <perintah> [opsi]
 Perintah: check-config, create-admin, reset-mfa, unlock, verify-audit, checkpoint, backup, verify-backup, restore,
@@ -35,31 +35,27 @@ def _err(msg: str) -> int:
     return 1
 
 
-# --------------------------------------------------------------------------- konfigurasi & akun
 def cmd_check_config(args) -> int:
-    problems = config.production_problems()
-    _out(f"APP_ENV={config.APP_ENV}")
-    for p in problems:
-        _out(f"  [TIDAK AMAN] {p}")
-    if not problems:
-        try:
-            db.init_db()
-            _out("[OK] Konfigurasi lolos. Master key cocok dengan data.")
-            return 0
-        except RuntimeError as e:
-            _out(f"[ERROR] Master key mismatch: {e}")
-            _out("\nSolusi:")
-            _out("  1. Jalankan: python -m tools.manage diagnose-key")
-            _out("  2. Atau reset DB: rm data/stegomed.db data/.master_key")
-            return 1
-    return 1
+    """Periksa konfigurasi produksi dan kecocokan master key."""
+    try:
+        master = config.master_key()
+        fp = fieldcrypt.fingerprint(master)
+        _out(f"Master fingerprint aktif: {fp}")
+        _out(f"DATABASE_URL={config.DATABASE_URL}")
+        _out(f"DATA_DIR={config.DATA_DIR}")
+        _out(f"STEGO_DIR={config.STEGO_DIR}")
+        if not config.DATABASE_URL:
+            return _err("DATABASE_URL kosong.")
+        return 0
+    except Exception as exc:
+        return _err(f"Konfigurasi tidak valid: {exc}")
 
 
 def cmd_diagnose_key(args) -> int:
     """Diagnose & repair master key inkonsistensi."""
     _out("🔍 Mendiagnosa master key dan database...")
     
-    db_path = Path(config.DATA_DIR) / "stegomed.db"
+    db_path = Path(config.DATA_DIR) / "SeMediChain.db"
     key_path = Path(config.DATA_DIR) / ".master_key"
     
     _out(f"\n📋 Status File:")
@@ -96,7 +92,7 @@ def cmd_diagnose_key(args) -> int:
         _out("     1. Set: MEDICRYPT_MASTER_KEY_OLD=<old_key>")
         _out("     2. Jalankan: python -m tools.manage rotate-master")
         _out("  B. Jika data lama tidak penting (demo/dev):")
-        _out("     1. Hapus: rm data/stegomed.db data/.master_key")
+        _out("     1. Hapus: rm data/SeMediChain.db data/.master_key")
         _out("     2. Jalankan ulang aplikasi")
         return 1
 
@@ -210,7 +206,14 @@ def cmd_backup(args) -> int:
 
 def _read_backup(path: str) -> tuple[dict, dict[str, bytes]]:
     with tarfile.open(path, "r:gz") as tar:
-        data = {m.name: tar.extractfile(m).read() for m in tar.getmembers() if m.isfile()}
+        data: dict[str, bytes] = {}
+        for member in tar.getmembers():
+            if not member.isfile():
+                continue
+            extracted = tar.extractfile(member)
+            if extracted is None:
+                raise ValueError(f"Tidak dapat membaca berkas {member.name} pada backup.")
+            data[member.name] = extracted.read()
     manifest = json.loads(data["manifest.json"])
     if not any(data["manifest.sig"].decode() == fieldcrypt.blind_index(json.dumps(manifest, sort_keys=True), "backup-manifest", k)
                for k in config.master_keys()):
@@ -283,6 +286,9 @@ def cmd_rotate_master(args) -> int:
             user.enc_priv = crypto_utils.rewrap_private_key(user.address, user.enc_priv)
             counts["kunci_privat"] += 1
         meta = s.get(SystemMeta, "master_fingerprint")
+        if meta is None:
+            meta = SystemMeta(key="master_fingerprint", value="")
+            s.add(meta)
         meta.value = fieldcrypt.fingerprint(config.master_key())
         if args.dry_run:
             s.rollback()
@@ -302,7 +308,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("check-config", help="periksa konfigurasi produksi dan kecocokan master key").set_defaults(fn=cmd_check_config)
     sub.add_parser("diagnose-key", help="diagnose & repair master key inkonsistensi").set_defaults(fn=cmd_diagnose_key)
     c = sub.add_parser("create-admin", help="buat akun admin")
-    c.add_argument("--email", required=True), c.add_argument("--name", required=True), c.add_argument("--password")
+    c.add_argument("--email", required=True)
+    c.add_argument("--name", required=True)
+    c.add_argument("--password")
     c.set_defaults(fn=cmd_create_admin)
     for name, fn, hlp in [("reset-mfa", cmd_reset_mfa, "reset MFA pengguna"), ("unlock", cmd_unlock, "buka kunci akun")]:
         c = sub.add_parser(name, help=hlp)
@@ -321,7 +329,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--file", required=True)
     c.set_defaults(fn=cmd_verify_backup)
     c = sub.add_parser("restore", help="pulihkan dari backup")
-    c.add_argument("--file", required=True), c.add_argument("--force", action="store_true")
+    c.add_argument("--file", required=True)
+    c.add_argument("--force", action="store_true")
     c.set_defaults(fn=cmd_restore)
     c = sub.add_parser("rotate-master", help="rotasi master key (kunci lama di MEDICRYPT_MASTER_KEY_OLD)")
     c.add_argument("--dry-run", action="store_true")

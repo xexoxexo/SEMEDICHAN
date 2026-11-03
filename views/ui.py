@@ -49,7 +49,7 @@ def log_view_once(user, action: str) -> None:
 
 def inject_css() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
-    st.sidebar.image("views/logo.png", width="stretch")
+    st.sidebar.image("views/logopredd.png", width="stretch")
 
 
 

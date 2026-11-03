@@ -23,9 +23,9 @@ PW = "kunci-rahasia1"
 
 def test_audit_emits_json_line_for_external_sink(caplog):
     db.init_db()
-    with caplog.at_level(logging.INFO, logger="stegomed.audit"):
+    with caplog.at_level(logging.INFO, logger="SeMediChain.audit"):
         db.log_event("0x" + "a" * 40, "uji_json", "rec1", "rincian ✓")
-    line = json.loads(next(r.getMessage() for r in caplog.records if r.name == "stegomed.audit"))
+    line = json.loads(next(r.getMessage() for r in caplog.records if r.name == "SeMediChain.audit"))
     assert line["action"] == "uji_json" and line["target"] == "rec1" and line["detail"] == "rincian ✓"
     assert len(line["hash"]) == 64 and isinstance(line["id"], int)
 

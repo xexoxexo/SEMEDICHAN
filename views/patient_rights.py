@@ -84,7 +84,7 @@ def _build_export(user, account, passphrases: dict[str, str]) -> tuple[bytes, li
         z.writestr("riwayat_akses.csv", out.getvalue())
 
         z.writestr("BACA-SAYA.txt",
-                   "Ekspor data StegoMed-Web3.\nFile ini berisi data kesehatan TIDAK terenkripsi. Simpan dengan aman.\n"
+                   "Ekspor data SeMediChain.\nFile ini berisi data kesehatan TIDAK terenkripsi. Simpan dengan aman.\n"
                    "rekam/: isi rekam medis (JSON); fhir/: format HL7 FHIR R4; phi/: identitas pasien terpisah; "
                    "diagnosis/: diagnosis sensitif & tanda tangan; stegotext/: file citra berisi rekam terenkripsi.\n"
                    + ("Dilewati: " + ", ".join(skipped) + "\n" if skipped else ""))
@@ -116,7 +116,7 @@ def export_data(user) -> None:
         data, skipped = ready
         if skipped:
             st.warning("Tidak ikut diekspor: " + ", ".join(skipped))
-        st.download_button("Unduh ekspor (ZIP)", data, file_name="ekspor_data_stegomed.zip", mime="application/zip",
+        st.download_button("Unduh ekspor (ZIP)", data, file_name="ekspor_data_seMediChain.zip", mime="application/zip",
                            key="export_dl", on_click=db.log_event, args=(user.address, "ekspor_data"))
 
 

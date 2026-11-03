@@ -42,7 +42,7 @@ def _patient_dashboard(user) -> None:
 
     # Kartu sapaan
     st.markdown(f"### Halo, {user.name}!")
-    st.markdown("Selamat datang kembali di StegoMed.")
+    st.markdown("Selamat datang kembali di SeMediChain.")
 
     # 1. Notifikasi Persetujuan Akses Dokter (Medical Permission)
     pending_requests = db.list_grants(patient=user.address, status="pending")

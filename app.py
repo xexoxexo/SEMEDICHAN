@@ -1,4 +1,4 @@
-"""StegoMed-Web3: RME dengan stenografi citra medis, enkripsi hybrid, dan verifikasi dompet Web3.
+"""SeMediChain: RME dengan stenografi citra medis, enkripsi hybrid, dan verifikasi dompet Web3.
 
 Jalankan:  streamlit run app.py
 """
@@ -9,7 +9,7 @@ import time
 
 import streamlit as st
 
-st.set_page_config(page_title="StegoMed-Web3", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="SeMediChain", page_icon="🏥", layout="wide")
 
 import config
 from utils import db_helper as db, auth_helpers as ah

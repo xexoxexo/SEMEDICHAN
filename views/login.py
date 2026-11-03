@@ -42,7 +42,7 @@ def _after_password(acct, email_checked: bool = False) -> None:
     """Verifikasi email -> MFA (terdaftar atau wajib) -> masuk."""
     acct = db.promote_if_admin(acct)
     if config.REQUIRE_EMAIL_VERIFICATION and not acct.email_verified and not email_checked:
-        error = _send_otp(acct, "verify_email", "Kode verifikasi StegoMed-Web3")
+        error = _send_otp(acct, "verify_email", "Kode verifikasi SeMediChain")
         st.session_state[FLOW] = {"step": "verify_email", "id": acct.id, "error": error}
         st.rerun()
     if acct.mfa_enabled:
@@ -160,7 +160,7 @@ def _forgot_form() -> None:
                 if acct is None:
                     st.info("Jika email terdaftar di sistem kami, Anda akan menerima kode reset password dalam beberapa menit.")
                 else:
-                    error = _send_otp(acct, "reset_password", "Kode reset password StegoMed-Web3")
+                    error = _send_otp(acct, "reset_password", "Kode reset password SeMediChain")
                     if error:
                         st.error(f"Gagal mengirim kode: {error}")
                     else:
@@ -210,7 +210,7 @@ def _forgot_form() -> None:
     
     c1, c2 = st.columns(2)
     if c1.button("Kirim ulang kode", key="reset_resend"):
-        error = _send_otp(acct, "reset_password", "Kode reset password StegoMed-Web3")
+        error = _send_otp(acct, "reset_password", "Kode reset password SeMediChain")
         if error:
             st.error(f"Gagal mengirim ulang: {error}")
         else:
@@ -243,7 +243,7 @@ def _step_verify_email(flow: dict) -> None:
             st.error("Kode salah atau kedaluwarsa.")
     c1, c2 = st.columns(2)
     if c1.button("Kirim ulang kode", key="verify_resend"):
-        flow["error"] = _send_otp(acct, "verify_email", "Kode verifikasi StegoMed-Web3")
+        flow["error"] = _send_otp(acct, "verify_email", "Kode verifikasi SeMediChain")
         st.rerun()
     if c2.button("Batal", key="verify_cancel"):
         st.session_state.pop(FLOW, None)
@@ -314,7 +314,7 @@ def _dev_outbox() -> None:
 
 
 def render() -> None:
-    st.title("StegoMed-Web3")
+    st.title("SeMediChain")
     st.caption("Rekam medis elektronik dengan stenografi citra medis, enkripsi hybrid AES-256 + X25519, "
                "dan verifikasi dompet Web3.")
     notice = st.session_state.pop("login_notice", None)

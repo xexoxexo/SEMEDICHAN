@@ -21,7 +21,7 @@ def test_login_page():
     """Halaman login."""
     at = AppTest.from_file("app.py")
     at.run()
-    assert "StegoMed-Web3" in getattr(at.get("title")[0], "value", "")
+    assert "SeMediChain" in getattr(at.get("title")[0], "value", "")
     assert len(at.tabs) == 3  # Masuk, Daftar, Lupa password
 
 

@@ -41,12 +41,12 @@ def record_to_bundle(record: dict, record_id: str) -> dict:
     def add(res: dict) -> None:
         entries.append({"fullUrl": f"urn:uuid:{res['id']}", "resource": res})
 
-    add({"resourceType": "Patient", "id": pid, "identifier": [{"system": "urn:stegomed:wallet", "value": patient.get("address", "")}],
+    add({"resourceType": "Patient", "id": pid, "identifier": [{"system": "urn:SeMediChain:wallet", "value": patient.get("address", "")}],
          "name": [{"text": patient.get("name", "")}]})
     prac = {"resourceType": "Practitioner", "id": did, "name": [{"text": doctor.get("name", "")}],
-            "identifier": [{"system": "urn:stegomed:wallet", "value": doctor.get("address", "")}]}
+            "identifier": [{"system": "urn:SeMediChain:wallet", "value": doctor.get("address", "")}]}
     if doctor.get("str"):
-        prac["identifier"].append({"system": "urn:stegomed:str", "value": doctor["str"]})
+        prac["identifier"].append({"system": "urn:SeMediChain:str", "value": doctor["str"]})
     add(prac)
     code, display = ENC_CLASS.get(visit.get("type"), ("AMB", "ambulatory"))
     enc = {"resourceType": "Encounter", "id": eid, "status": "finished", "subject": _ref(pid),

@@ -11,7 +11,7 @@ import struct
 import time
 from urllib.parse import quote
 
-ISSUER = "StegoMed-Web3"
+ISSUER = "SeMediChain"
 
 
 def new_secret() -> str:
@@ -53,7 +53,7 @@ def qr_png(uri: str) -> bytes | None:
     except ImportError:
         return None
     buf = io.BytesIO()
-    qrcode.make(uri).save(buf, format="PNG")
+    qrcode.make(uri).save(buf, kind="PNG")
     return buf.getvalue()
 
 

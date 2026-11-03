@@ -53,7 +53,7 @@ def check_master_key() -> None:
                 "MEDICRYPT_MASTER_KEY_OLD dengan kunci lama lalu jalankan `python -m tools.manage rotate-master`."
             )
         if row.value != current:
-            logging.getLogger("stegomed").warning("Master key lama masih dipakai: jalankan rotate-master.")
+            logging.getLogger("SeMediChain").warning("Master key lama masih dipakai: jalankan rotate-master.")
 
 
 @contextmanager
@@ -293,7 +293,7 @@ def rate_limited(key: str, limit: int, window_seconds: int) -> bool:
 def _recovery_hash(code: str) -> str:
     """Kode pemulihan berentropi 64-bit: SHA-256 berdomain cukup (tidak bergantung master key, aman saat rotasi)."""
     from utils import totp
-    return hashlib.sha256(b"stegomed-recovery|" + totp.normalize_recovery(code).encode()).hexdigest()
+    return hashlib.sha256(b"SeMediChain-recovery|" + totp.normalize_recovery(code).encode()).hexdigest()
 
 
 def enable_mfa(account_id: int, secret: str, recovery_codes: list[str], last_step: int = 0) -> None:
@@ -577,7 +577,7 @@ def _entry_hash(prev: str, ts: str, actor: str, action: str, target: str, detail
     return hashlib.sha256("|".join([prev, ts, actor, action, target, detail]).encode()).hexdigest()
 
 
-AUDIT_LOG = logging.getLogger("stegomed.audit")
+AUDIT_LOG = logging.getLogger("SeMediChain.audit")
 
 
 def log_event(actor: str, action: str, target: str = "", detail: str = "") -> None:

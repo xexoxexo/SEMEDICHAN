@@ -23,7 +23,7 @@ from sqlalchemy.types import TypeDecorator
 import config
 
 PREFIX = "enc1:"
-_AAD = b"stegomed-field"
+_AAD = b"SeMediChain-field"
 
 
 class FieldCryptError(Exception):
@@ -32,7 +32,7 @@ class FieldCryptError(Exception):
 
 @lru_cache(maxsize=16)
 def _subkey(master: bytes, info: bytes) -> bytes:
-    return HKDF(algorithm=hashes.SHA256(), length=32, salt=b"stegomed-field-salt", info=info).derive(master)
+    return HKDF(algorithm=hashes.SHA256(), length=32, salt=b"SeMediChain-field-salt", info=info).derive(master)
 
 
 def key_id(master: bytes) -> bytes:

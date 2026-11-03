@@ -11,13 +11,13 @@ from datetime import datetime, timezone
 
 from eth_account import Account
 from eth_account.messages import encode_defunct
-from eth_utils import to_checksum_address
+from eth_utils.address import to_checksum_address
 
 import config
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 STATEMENT = (
-    "Masuk ke StegoMed-Web3. Tanda tangan ini gratis (tanpa gas fee) dan tidak "
+    "Masuk ke SeMediChain. Tanda tangan ini gratis (tanpa gas fee) dan tidak "
     "mengirim transaksi apa pun."
 )
 

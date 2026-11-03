@@ -206,7 +206,7 @@ def test_login_errors_and_lockout():
     assert any(e.value == "Email atau password salah." for e in at.error)
     _login(at, "citra.lestari@gmail.com")                                       # password benar, tetapi terkunci
     assert any("dikunci sementara" in e.value for e in at.error)
-    assert at.title[0].value == "StegoMed-Web3"
+    assert at.title[0].value == "SeMediChain"
 
 
 def test_login_rate_limit_per_ip(monkeypatch):

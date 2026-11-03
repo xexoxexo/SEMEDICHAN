@@ -230,7 +230,7 @@ def decrypt_record(
     shared = priv.exchange(X25519PublicKey.from_public_bytes(p["eph_pub"]))
     pp = b""
     if p["flags"] & 1:
-        pp = _scrypt(passphrase, hashlib.sha256(b"MediCrypt-v2-pp|" + p["eph_pub"]).digest()[:16])
+        pp = _scrypt(passphrase or "", hashlib.sha256(b"MediCrypt-v2-pp|" + p["eph_pub"]).digest()[:16])
     wn, wrapped = p["entries"][rid]
     try:
         dek = AESGCM(_kek(shared, p["eph_pub"], rid, pp)).decrypt(wn, wrapped, rid + p["eph_pub"])
@@ -322,7 +322,7 @@ def decrypt_phi(
     shared = priv.exchange(X25519PublicKey.from_public_bytes(eph_pub))
     pp = b""
     if flags & 1:
-        pp = _scrypt(passphrase, hashlib.sha256(b"MediCrypt-v2-phi-pp|" + eph_pub).digest()[:16])
+        pp = _scrypt(passphrase or "", hashlib.sha256(b"MediCrypt-v2-phi-pp|" + eph_pub).digest()[:16])
     
     wn, wrapped = entries[rid]
     try:
@@ -411,7 +411,7 @@ def decrypt_diagnosis(
     shared = priv.exchange(X25519PublicKey.from_public_bytes(eph_pub))
     pp = b""
     if flags & DIAG_FLAGS_ENC:
-        pp = _scrypt(passphrase, hashlib.sha256(b"MediCrypt-v2-diag-pp|" + eph_pub).digest()[:16])
+        pp = _scrypt(passphrase or "", hashlib.sha256(b"MediCrypt-v2-diag-pp|" + eph_pub).digest()[:16])
     wn, wrapped = entries[rid]
     try:
         dek = AESGCM(_kek(shared, eph_pub, rid, pp)).decrypt(wn, wrapped, rid + eph_pub)
@@ -469,7 +469,7 @@ LAB_ENC_MAGIC = b"MCP1"
 
 
 def lab_stego_key(passphrase: str) -> bytes:
-    return hashlib.sha256(b"StegoMed-lab-key|" + _scrypt(passphrase, b"StegoMed-lab-salt1")).digest()
+    return hashlib.sha256(b"SeMediChain-lab-key|" + _scrypt(passphrase, b"SeMediChain-lab-salt1")).digest()
 
 
 def pack_lab_payload(name: str, data: bytes, passphrase: str | None = None) -> bytes:
@@ -485,7 +485,7 @@ def pack_lab_payload(name: str, data: bytes, passphrase: str | None = None) -> b
 
 def unpack_lab_payload(blob: bytes, passphrase: str | None = None) -> tuple[str, bytes, bool]:
     if blob[:4] != LAB_MAGIC:
-        raise MediCryptError("Payload bukan format Lab StegoMed (LAB1).")
+        raise MediCryptError("Payload bukan format Lab SeMediChain (LAB1).")
     enc = blob[4] == 1
     nlen = int.from_bytes(blob[5:7], "big")
     name = blob[7 : 7 + nlen].decode("utf-8", errors="replace")

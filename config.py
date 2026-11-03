@@ -1,4 +1,4 @@
-"""Konfigurasi aplikasi StegoMed-Web3 (dibaca dari environment / file .env).
+"""Konfigurasi aplikasi SeMediChain (dibaca dari environment / file .env).
 
 APP_ENV=development (bawaan) memudahkan uji lokal. APP_ENV=production mengaktifkan pemeriksaan ketat:
 aplikasi menolak start bila pengaturan tidak aman (lihat production_problems()).
@@ -33,7 +33,7 @@ IS_PROD = APP_ENV == "production"
 
 DATA_DIR = Path(os.getenv("DATA_DIR") or (BASE_DIR / "data"))
 STEGO_DIR = DATA_DIR / "stego"
-DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///{(DATA_DIR / 'stegomed.db').as_posix()}"
+DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///{(DATA_DIR / 'SeMediChain.db').as_posix()}"
 ALLOW_SQLITE_IN_PRODUCTION = _flag("ALLOW_SQLITE_IN_PRODUCTION", "0")
 
 APP_DOMAIN = os.getenv("APP_DOMAIN") or "localhost:8501"

@@ -248,7 +248,7 @@ def test_session_idle_and_absolute_timeouts():
     assert "Halo, Sesi Uji" in at.header[0].value
     at.session_state["last_seen"] = time.time() - (config.SESSION_IDLE_MINUTES + 1) * 60
     _ok(at.run())
-    assert at.title[0].value == "StegoMed-Web3" and any("tidak ada aktivitas" in w.value for w in at.warning)
+    assert at.title[0].value == "SeMediChain" and any("tidak ada aktivitas" in w.value for w in at.warning)
     _login(at, "sesi.uji@gmail.com")
     at.session_state["auth_at"] = time.time() - (config.SESSION_MAX_HOURS + 1) * 3600
     _ok(at.run())

@@ -36,4 +36,4 @@ jobs:
     needs: [test]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t stegomed-web3:ci .
+      - run: docker build -t semedichain:ci .
