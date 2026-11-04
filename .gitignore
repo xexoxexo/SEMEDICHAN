@@ -46,6 +46,12 @@ logs/
 # Test cache
 .pytest_cache/
 
+# Development files (Jangan commit ke main)
+requirements-dev.txt
+.env
+.env.*
+*.log
+
 # Temporary files
 tmp/
 *.tmp

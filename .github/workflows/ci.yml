@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-      - run: pip install -r requirements-dev.txt -c constraints.txt
+      - run: pip install -r requirements.txt pytest pytest-mock pytest-timeout ruff -c constraints.txt
       - run: pytest -q
 
   security:
