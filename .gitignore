@@ -18,7 +18,7 @@ venv/
 .venv/
 env/
 ENV/
-
+ 
 # Data & Secrets (JANGAN COMMIT!)
 data/*.db
 data/.master_key
