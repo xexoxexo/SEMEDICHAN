@@ -315,8 +315,7 @@ def _dev_outbox() -> None:
 
 def render() -> None:
     st.title("SeMediChain")
-    st.caption("Rekam medis elektronik dengan stenografi citra medis, enkripsi hybrid AES-256 + X25519, "
-               "dan verifikasi dompet Web3.")
+    st.caption("")
     notice = st.session_state.pop("login_notice", None)
     if notice:
         st.warning(notice)
