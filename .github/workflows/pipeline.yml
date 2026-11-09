@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build Production Docker Image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
