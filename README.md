@@ -644,7 +644,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 | :--- | :--- | :--- |
 | v1.0 - Alpha | ✅ Completed | 2026-10-15 |
 | v1.5 - Beta | ✅ Completed | 2026-10-25 |
-| v2.0 - Production Ready | ✅ Completed | 2026-11-02 |
+| v2.0 - Production| ✅ Completed | 2026-11-02 |
 | v2.5 - SIV Integration | 🔄 In Progress | Q4 2026 |
 | v3.0 - SATUSEHAT | 📝 Planned | Q1 2027 |
 
